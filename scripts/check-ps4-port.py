@@ -75,8 +75,8 @@ require(
 )
 require(
     "Package driver checks real build prerequisites",
-    'need_exec "$PS4_TOOLCHAIN_BIN/ps4-cc"' in build
-    and 'need_exec "$PS4_TOOLCHAIN_BIN/ps4-c++"' in build
+    '[[ -x "$PS4_TOOLCHAIN_BIN/ps4-cc" ]]' in build
+    and '[[ -x "$PS4_TOOLCHAIN_BIN/ps4-c++" ]]' in build
     and "VITA3K_PS4_RUNTIME_LIBRARIES" in build
     and "cmake --build" in build
     and "create-fself" in build
