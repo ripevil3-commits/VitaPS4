@@ -78,8 +78,8 @@ clang --target=x86_64-pc-freebsd12-elf -fPIC -funwind-tables \
 
 echo "[smoke] linking the PS4 ELF"
 ld.lld -m elf_x86_64 -pie --script "$SDK/link.x" --eh-frame-hdr \
-    -L"$SDK/lib" -lc -lkernel -lc++ \
-    "$SDK/lib/crt1.o" "$BUILD_DIR/main.o" -o "$BUILD_DIR/smoke.elf"
+    -L"$SDK/lib" "$BUILD_DIR/main.o" -o "$BUILD_DIR/smoke.elf" \
+    -lc -lkernel -lc++ "$SDK/lib/crt1.o"
 
 echo "[smoke] creating eboot.bin"
 (
