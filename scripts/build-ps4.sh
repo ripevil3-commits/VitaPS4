@@ -65,7 +65,7 @@ mkdir -p "$OUT_DIR" "$BUILD_DIR"
 OUT_DIR="$(cd "$OUT_DIR" && pwd)"
 BUILD_DIR="$(cd "$BUILD_DIR" && pwd)"
 
-echo "[vita3k-ps4] configure (experimental; using the linked RADV VK_EXT_headless_surface WSI)"
+echo "[vita3k-ps4] configure (experimental; using the linked RADV/VideoOut display WSI)"
 cmake -S "$ROOT" -B "$BUILD_DIR" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_TOOLCHAIN_FILE="$ROOT/cmake/ps4-wrapper.cmake" \
