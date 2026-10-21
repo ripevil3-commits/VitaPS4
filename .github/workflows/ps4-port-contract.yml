@@ -1,0 +1,33 @@
+name: Validate PS4 source integration
+
+on:
+  push:
+    branches:
+      - ps4-port-bootstrap-2026-10-21
+    paths:
+      - "vita3k/sdl-frontend/src/frame_host_ps4.cpp"
+      - "vita3k/CMakeLists.txt"
+      - "vita3k/sdl-frontend/CMakeLists.txt"
+      - "vita3k/ps4/main_ps4.cpp"
+      - "vita3k/sdl-frontend/src/session.cpp"
+      - "scripts/build-ps4.sh"
+      - "scripts/check-ps4-port.py"
+      - "docs/PS4_BUILD.md"
+      - ".github/workflows/ps4-port-contract.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Check PS4 source wiring
+        run: python3 scripts/check-ps4-port.py
+      - name: Parse PS4 build script
+        shell: bash
+        run: bash -n scripts/build-ps4.sh
