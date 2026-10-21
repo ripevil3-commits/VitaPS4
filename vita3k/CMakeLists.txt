@@ -208,26 +208,18 @@ elseif(VITA3K_PS4)
 	target_include_directories(vita3k PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 	target_link_libraries(vita3k PRIVATE SDL3::SDL3 pugixml::pugixml)
 
-	# The Vulkan renderer can only present on PS4 when linked with a PS4-specific RADV/VideoOut WSI.
-	# Require explicit paths instead of producing a plausible-looking ELF that cannot create a surface.
-	set(VITA3K_PS4_WSI_SOURCE "" CACHE FILEPATH "PS4 RADV/VideoOut WSI source implementing VK_KHR_display and VK_KHR_swapchain")
-	set(VITA3K_PS4_RUNTIME_INCLUDE_DIRS "" CACHE STRING "Semicolon-separated include directories for the PS4 runtime/WSI")
-	set(VITA3K_PS4_RUNTIME_LIBRARIES "" CACHE STRING "Semicolon-separated PS4 RADV/runtime/system libraries")
-	if(NOT VITA3K_PS4_WSI_SOURCE OR NOT EXISTS "${VITA3K_PS4_WSI_SOURCE}")
-		message(FATAL_ERROR
-			"VITA3K_PS4 requires VITA3K_PS4_WSI_SOURCE, a PS4 RADV/VideoOut WSI source. "
-			"Provide a compatible WSI such as the one developed for PS4SX2/xemu-ps4; the desktop Vulkan loader is not sufficient.")
-	endif()
+	# The PS4 RADV/VideoOut runtime provides VK_EXT_headless_surface and its own
+	# present path. Do not add a second VK_KHR_display wrapper or wrap the Vulkan ICD loader.
+	set(VITA3K_PS4_RUNTIME_INCLUDE_DIRS "" CACHE STRING "Semicolon-separated include directories for the PS4 runtime")
+	set(VITA3K_PS4_RUNTIME_LIBRARIES "" CACHE STRING "Semicolon-separated PS4 RADV/Vulkan loader/Orbis system libraries")
 	if(NOT VITA3K_PS4_RUNTIME_LIBRARIES)
 		message(FATAL_ERROR
-			"VITA3K_PS4 requires VITA3K_PS4_RUNTIME_LIBRARIES with the PS4-linked RADV runtime and required Orbis system libraries.")
+			"VITA3K_PS4 requires VITA3K_PS4_RUNTIME_LIBRARIES for the PS4 RADV/Vulkan runtime and required Orbis system libraries.")
 	endif()
-	target_sources(vita3k PRIVATE "${VITA3K_PS4_WSI_SOURCE}")
 	if(VITA3K_PS4_RUNTIME_INCLUDE_DIRS)
 		target_include_directories(vita3k PRIVATE ${VITA3K_PS4_RUNTIME_INCLUDE_DIRS})
 	endif()
 	target_link_libraries(vita3k PRIVATE ${VITA3K_PS4_RUNTIME_LIBRARIES})
-	target_link_options(vita3k PRIVATE "-Wl,--wrap=vk_icdGetInstanceProcAddr")
 else()
 	add_executable(vita3k MACOSX_BUNDLE main.cpp interface.cpp interface.h performance.cpp)
 endif()
