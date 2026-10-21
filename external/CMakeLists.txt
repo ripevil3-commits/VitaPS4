@@ -80,15 +80,49 @@ add_subdirectory(libfat16)
 add_library(miniz STATIC miniz/miniz.c miniz/miniz.h)
 target_include_directories(miniz PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/miniz")
 
-# The public SDL3 source tree does not include the separate PS4 backend.
-# Fail with a targeted message rather than silently trying to build the host SDL3 sources
-# or selecting a desktop audio/controller driver for an Orbis target.
+# Prefer a properly ported SDL3 package if one exists. Otherwise build the bundled SDL3
+# as a headless fallback: ScePad is bridged by vita3k/sdl-frontend/src/ps4_input.cpp,
+# and the dummy audio backend allows a silent first boot while real audio is unfinished.
+# This does not enable a desktop video backend and must never accidentally select Linux/FreeBSD
+# input/audio for the PS4 target.
 if(VITA3K_PS4)
+	option(VITA3K_PS4_USE_BUNDLED_SDL3_FALLBACK "Build bundled SDL3 headless with silent audio when a PS4 SDL3 package is unavailable" ON)
 	find_package(SDL3 CONFIG QUIET)
-	if(NOT SDL3_FOUND OR NOT TARGET SDL3::SDL3)
+	if(SDL3_FOUND AND TARGET SDL3::SDL3)
+		message(STATUS "Using the provided PS4-ABI SDL3 package")
+	elseif(VITA3K_PS4_USE_BUNDLED_SDL3_FALLBACK)
+		message(WARNING "No PS4 SDL3 package found: enabling bundled SDL3 headless fallback with silent audio; ScePad is handled by the native Vita3K bridge.")
+		set(SDL_SHARED OFF CACHE BOOL "Build SDL3 shared library" FORCE)
+		set(SDL_STATIC ON CACHE BOOL "Build SDL3 static library" FORCE)
+		set(SDL_TEST_LIBRARY OFF CACHE BOOL "Build SDL3 test library" FORCE)
+		set(SDL_TESTS OFF CACHE BOOL "Build SDL3 tests" FORCE)
+		set(SDL_EXAMPLES OFF CACHE BOOL "Build SDL3 examples" FORCE)
+		set(SDL_INSTALL OFF CACHE BOOL "Install SDL3" FORCE)
+		set(SDL_VIDEO OFF CACHE BOOL "Disable SDL3 desktop video on PS4" FORCE)
+		set(SDL_AUDIO ON CACHE BOOL "Enable SDL3 audio abstraction" FORCE)
+		set(SDL_DUMMYAUDIO ON CACHE BOOL "Use silent dummy audio for the first PS4 boot" FORCE)
+		set(SDL_DISKAUDIO OFF CACHE BOOL "Disable file-based audio on PS4" FORCE)
+		set(SDL_OSS OFF CACHE BOOL "Disable desktop OSS audio on PS4" FORCE)
+		set(SDL_JOYSTICK ON CACHE BOOL "Enable SDL3 joystick abstraction" FORCE)
+		set(SDL_VIRTUAL_JOYSTICK ON CACHE BOOL "Enable ScePad virtual joystick bridge" FORCE)
+		set(SDL_HIDAPI OFF CACHE BOOL "Disable desktop HIDAPI on PS4" FORCE)
+		set(SDL_HIDAPI_JOYSTICK OFF CACHE BOOL "Disable desktop HIDAPI joystick on PS4" FORCE)
+		set(SDL_HAPTIC OFF CACHE BOOL "Disable SDL haptics until a PS4 backend exists" FORCE)
+		set(SDL_SENSOR OFF CACHE BOOL "Disable SDL sensors on PS4" FORCE)
+		set(SDL_CAMERA OFF CACHE BOOL "Disable SDL camera on PS4" FORCE)
+		set(SDL_POWER OFF CACHE BOOL "Disable SDL power APIs on PS4" FORCE)
+		set(SDL_DIALOG OFF CACHE BOOL "Disable SDL dialogs on PS4" FORCE)
+		set(SDL_GPU OFF CACHE BOOL "Disable SDL GPU abstraction on PS4" FORCE)
+		set(SDL_RENDER OFF CACHE BOOL "Disable SDL render abstraction on PS4" FORCE)
+		set(SDL_TRAY OFF CACHE BOOL "Disable SDL tray on PS4" FORCE)
+		add_subdirectory(sdl EXCLUDE_FROM_ALL)
+		if(NOT TARGET SDL3::SDL3)
+			message(FATAL_ERROR "Bundled SDL3 fallback did not create SDL3::SDL3; inspect SDL3's target configuration.")
+		endif()
+	else()
 		message(FATAL_ERROR
-			"VITA3K_PS4 requires a PS4-ABI SDL3Config.cmake package that exports SDL3::SDL3. "
-			"The bundled upstream SDL3 source does not contain the separate PS4 backend; see docs/PS4_BUILD.md.")
+			"VITA3K_PS4 needs either a PS4-ABI SDL3Config.cmake package or VITA3K_PS4_USE_BUNDLED_SDL3_FALLBACK=ON. "
+			"The fallback has silent audio and requires the native ScePad bridge.")
 	endif()
 else()
 	add_subdirectory(sdl)
