@@ -1,0 +1,10 @@
+# Local PS4 smoke-build outputs
+/build/
+/out/
+
+# Generated PS4 binaries and package metadata
+*.o
+*.elf
+*.oelf
+*.pkg
+pkg.gp4
