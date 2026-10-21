@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
-# Check the host tools and OpenOrbis layout used by the PS4 porting work.
-# This is a prerequisite check only; it does not compile Vita3K or create a PKG.
+# Check prerequisites for the native OpenOrbis smoke-test build.
+# This only checks the environment; it does not compile Vita3K.
 set -euo pipefail
 
-OPENORBIS="${OPENORBIS:-/opt/pacbrew/ps4/openorbis}"
-CLANG_VER="${CLANG_VER:-21}"
-missing=0
+SDK="${OO_PS4_TOOLCHAIN:-${OPENORBIS:-}}"
+if [ -z "$SDK" ]; then
+    echo "Set OO_PS4_TOOLCHAIN to the root of your OpenOrbis toolchain." >&2
+    exit 2
+fi
 
+missing=0
 need_cmd() {
     if command -v "$1" >/dev/null 2>&1; then
         printf 'OK   command: %s\n' "$1"
@@ -15,8 +18,7 @@ need_cmd() {
         missing=1
     fi
 }
-
-need_file() {
+need_path() {
     if [ -e "$1" ]; then
         printf 'OK   path: %s\n' "$1"
     else
@@ -25,26 +27,22 @@ need_file() {
     fi
 }
 
-printf 'Checking host dependencies...\n'
-for cmd in cmake ninja git python3 "clang-${CLANG_VER}" "clang++-${CLANG_VER}" "ld.lld-${CLANG_VER}" "llvm-ar-${CLANG_VER}"; do
-    need_cmd "$cmd"
-done
+printf 'Checking host tools...\n'
+for cmd in clang ld.lld python3; do need_cmd "$cmd"; done
 
-printf '\nChecking OpenOrbis toolchain at %s...\n' "$OPENORBIS"
+printf '\nChecking OpenOrbis at %s...\n' "$SDK"
 for path in \
-    "$OPENORBIS/cmake/ps4.cmake" \
-    "$OPENORBIS/link.x" \
-    "$OPENORBIS/include" \
-    "$OPENORBIS/lib/crt1.o" \
-    "$OPENORBIS/bin/linux/create-fself" \
-    "$OPENORBIS/bin/linux/create-gp4" \
-    "$OPENORBIS/bin/linux/PkgTool.Core"; do
-    need_file "$path"
+    "$SDK/link.x" \
+    "$SDK/include/orbis/libkernel.h" \
+    "$SDK/lib/crt1.o" \
+    "$SDK/bin/linux/create-fself" \
+    "$SDK/bin/linux/create-gp4" \
+    "$SDK/bin/linux/PkgTool.Core"; do
+    need_path "$path"
 done
 
 if [ "$missing" -ne 0 ]; then
-    printf '\nEnvironment check failed. Install/fix the missing host tools or set OPENORBIS and CLANG_VER.\n' >&2
+    printf '\nPrerequisite check failed. Fix the missing tools/paths before building.\n' >&2
     exit 1
 fi
-
-printf '\nEnvironment layout looks ready for the next milestone. No binary was built by this check.\n'
+printf '\nPrerequisites look present. The smoke build and PKG still need to be run and tested.\n'
