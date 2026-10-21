@@ -1,29 +1,33 @@
 # Vita3K PS4 — earliest beta milestone
 
-This document tracks the smallest honest beta target. A GitHub source import or a successful shell-script check is not a runnable beta.
+This tracks the smallest honest beta target. A source import or passing script check is not a runnable beta.
 
-## Beta 0: bootable homebrew shell
+## Beta 0: first bootable homebrew shell
 - [x] Import the Vita3K source tree into this branch.
-- [x] Add a PS4 entry point and experimental build/package driver.
-- [ ] Prepare a reproducible PS4 compiler/sysroot and PS4-built dependency set.
-- [ ] Obtain/build a compatible PS4-ABI SDL3 backend (or implement a complete native audio/controller replacement).
-- [x] Implement the source-side PS4 FrameHost using `VK_EXT_headless_surface`.
-- [x] Add a required static Vulkan loader path and pair Mesa headers with the matching RADV archive.
-- [ ] Verify on the actual PS4 RADV runtime that the extension is exposed, the surface/swapchain succeeds, and frames reach VideoOut.
-- [ ] Build the Vita3K target and resolve actual PS4 compiler/linker errors.
-- [ ] Produce a PKG from the successful build and verify package metadata/assets.
-- [ ] Launch on a compatible PS4 homebrew setup and capture logs/screenshots.
+- [x] Add a PS4 entry point and an experimental build/package driver.
+- [x] Implement the source-side Vulkan FrameHost using `VK_EXT_headless_surface`.
+- [x] Add a static Vulkan loader path with matching Mesa header/archive checks.
+- [x] Add a source-side ScePad-to-SDL3 virtual gamepad bridge.
+- [x] Add bundled SDL3 headless fallback with virtual joystick support and silent audio.
+- [ ] Prepare a reproducible PS4 compiler/sysroot and build dependencies for the PS4 ABI.
+- [ ] Configure and compile the complete Vita3K target, then resolve real toolchain/link failures.
+- [ ] Verify on a real PS4 that RADV exposes the required extension and presents frames through VideoOut.
+- [ ] Replace dummy audio with a working PS4 output backend.
+- [ ] Produce a PKG from a successful build and verify its metadata/assets.
+- [ ] Launch it on a compatible homebrew setup and capture logs/screenshots.
 
 ## Beta 1: attempt one installed Vita title
 - [ ] Add a usable title-selection/install flow; the current entry point only reads an installed title ID from `/data/Vita3K/config/launch_app.txt`.
-- [ ] Verify app initialization and controller input on hardware.
-- [ ] Test at least one legally obtained homebrew Vita title and record the result.
+- [ ] Verify controller input and app initialization on hardware.
+- [ ] Test an owned homebrew Vita title and record the result.
 
-## Current blockers
-The PS4 build has not been validated end-to-end. The build requires a local PS4 sysroot/compiler, PS4-built dependencies, a PS4-ABI SDL3 package, a compatible static Vulkan loader plus matching RADV headers/archive, VideoOut/system libraries, and OpenOrbis packaging tools. The public SDL3 source tree notes that its PS4 backend is maintained separately and is available under Sony's PlayStation-development NDA; this branch does not include that backend. Do not label any generated artifact as a beta until the full build and device launch are verified.
+## Current evidence and limits
 
-## Fastest route
-1. Secure a reproducible PS4 build environment and confirm the expected compiler/SDK paths.
-2. Configure CMake using those exact dependencies and resolve the first cross-build failures.
-3. Confirm the runtime surface/swapchain and present at least one frame before attempting game compatibility.
-4. Package and test the first bootable build; then expand to title launching.
+The import branch contains the implementation work above, and GitHub Actions has passed prior source-contract, FrameHost syntax and shell checks. The newly added ScePad source is undergoing its first compile check against public OpenOrbis headers. None of those checks is an end-to-end PS4 cross-build or on-console test. A beta label is held until a real binary is built and launched.
+
+## Next critical path
+
+1. Pass the native-input syntax check.
+2. Configure the entire project against one prepared PS4 sysroot and matching Vulkan loader/dependencies.
+3. Fix actual compile/link failures and verify one Vulkan present on hardware.
+4. Package and test the first bootable shell before investing in game compatibility.
