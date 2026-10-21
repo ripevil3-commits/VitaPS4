@@ -1,0 +1,42 @@
+name: Import Vita3K PS4 source into VitaPS4
+
+on:
+  push:
+    branches:
+      - ps4-port-bootstrap-2026-10-21
+    paths:
+      - .github/workflows/import-vita3k-source.yml
+
+permissions:
+  contents: write
+
+jobs:
+  import-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out VitaPS4 destination
+        uses: actions/checkout@v4
+        with:
+          ref: ps4-port-bootstrap-2026-10-21
+          fetch-depth: 0
+
+      - name: Fetch the complete Vita3K PS4 working branch
+        run: |
+          git clone --depth 1 --branch ps4-port-prototype-2026-10-21 https://github.com/ripevil3-commits/Vita3K.git /tmp/vita3k-source
+
+      - name: Copy source files into this repository
+        run: |
+          rsync -a --exclude='.git' /tmp/vita3k-source/ ./
+          git status --short
+
+      - name: Commit imported source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No source changes to import."
+            exit 0
+          fi
+          git commit -m "Import complete Vita3K PS4 prototype source"
+          git push origin HEAD:ps4-port-bootstrap-2026-10-21
