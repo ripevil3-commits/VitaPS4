@@ -27,17 +27,21 @@ The public [Crema](https://github.com/iHaiDeeZ/Crema) and [DolphinPS4](https://g
 
 Their build documentation/scripts use an OpenOrbis-based cross toolchain, custom runtime/sysroot work, platform-specific front ends, and a Mesa/RADV path adapted for PS4 GPU submission. Their Cemu configuration explicitly disables desktop GUI/input/audio backends and enables Vulkan. Those pieces are references for architecture and testing strategy—not files that can be copied over and expected to work unchanged with Vita3K.
 
+[PS4SX2](https://github.com/iHaiDeeZ/PS4SX2) adds another useful reference: it separates the PS4 build, link and package stages, has a dedicated PS4 Makefile and link target, and stages `param.sfo` and assets before generating a GP4 and PKG. Its build also relies on a PS4-adapted runtime and RADV path, not just stock desktop Vulkan. The practical implications and file-level references are in [REFERENCE_PORTS.md](REFERENCE_PORTS.md).
+
 References:
 - [Crema build configuration](https://github.com/iHaiDeeZ/Crema/blob/main/scripts/configure-cemu.sh)
 - [Crema PS4 toolchain integration](https://github.com/iHaiDeeZ/Crema/tree/main/toolchain)
 - [DolphinPS4 build guide](https://github.com/iHaiDeeZ/DolphinPS4/blob/main/BUILDING.md)
 - [DolphinPS4 Mesa port](https://github.com/iHaiDeeZ/DolphinPS4/tree/main/port/mesa)
+- [PS4SX2 PS4 build driver](https://github.com/iHaiDeeZ/PS4SX2/blob/main/ps4/build-ps4.sh)
+- [PS4SX2 package helper](https://github.com/iHaiDeeZ/PS4SX2/blob/main/ps4/make-pkg.sh)
 
 ## Blockers, in order
 
 ### 0. Prove the toolchain and package pipeline
 
-Build a tiny native PS4 app, generate `eboot.bin` and a PKG using the selected OpenOrbis toolchain, install it with GoldHEN, and launch it on the target console. The environment checker in this repository checks host prerequisites only; it is not a substitute for this hardware test.
+Build a tiny native PS4 app, generate `eboot.bin` and a PKG using the selected OpenOrbis toolchain, install it with GoldHEN, and launch it on the target console. The repository now contains a smoke-build script and a matching prerequisite checker, but neither has yet been executed against an installed toolchain in this work session. A static source edit or passing environment check is not a hardware test.
 
 ### 1. Add a PS4-specific build target
 
@@ -57,10 +61,10 @@ Vita3K currently compiles both OpenGL and Vulkan renderer code. Decide on one PS
 
 ### 5. Integrate Vita3K and package
 
-Only after the app shell, CPU/JIT and renderer can be built separately should we link Vita3K core modules, add game-library/config paths, stage required non-proprietary assets, generate `sce_sys/param.sfo`, and package a PKG. Final status requires a real console test and logs.
+Only after the app shell, CPU/JIT and renderer can be built separately should we link Vita3K core modules, add game-library/config paths, stage required assets, generate `sce_sys/param.sfo`, and package a PKG. Final status requires a real console test and logs.
 
 ## Non-goals for the first milestone
 
 - Do not claim game compatibility before the emulator starts and loads a test title.
-- Do not bundle copyrighted games, firmware, keys, or proprietary Sony modules.
+- Do not put game files, firmware, or keys in this repository. The smoke builder copies the standard OpenOrbis sample icon and runtime modules from the user's local toolchain into the locally generated smoke package; it does not keep those files in Git. Do not redistribute a generated package containing runtime files unless their licenses explicitly permit it.
 - Do not advertise a PKG as working before a fresh build and real-device launch test.
