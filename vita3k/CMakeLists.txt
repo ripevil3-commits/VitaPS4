@@ -211,10 +211,10 @@ elseif(VITA3K_PS4)
 	# The PS4 RADV/VideoOut runtime provides VK_EXT_headless_surface and its own
 	# present path. Do not add a second VK_KHR_display wrapper or wrap the Vulkan ICD loader.
 	set(VITA3K_PS4_RUNTIME_INCLUDE_DIRS "" CACHE STRING "Semicolon-separated include directories for the PS4 runtime")
-	set(VITA3K_PS4_RUNTIME_LIBRARIES "" CACHE STRING "Semicolon-separated PS4 RADV/Vulkan loader/Orbis system libraries")
+	set(VITA3K_PS4_RUNTIME_LIBRARIES "" CACHE STRING "Semicolon-separated additional PS4 Orbis system/runtime libraries")
 	if(NOT VITA3K_PS4_RUNTIME_LIBRARIES)
 		message(FATAL_ERROR
-			"VITA3K_PS4 requires VITA3K_PS4_RUNTIME_LIBRARIES for the PS4 RADV/Vulkan runtime and required Orbis system libraries.")
+			"VITA3K_PS4 requires VITA3K_PS4_RUNTIME_LIBRARIES for additional Orbis system/runtime libraries; the Vulkan loader is configured separately in external/CMakeLists.txt.")
 	endif()
 	if(VITA3K_PS4_RUNTIME_INCLUDE_DIRS)
 		target_include_directories(vita3k PRIVATE ${VITA3K_PS4_RUNTIME_INCLUDE_DIRS})
