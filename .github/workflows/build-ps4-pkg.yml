@@ -1,0 +1,57 @@
+name: Build VitaPS4 PKG
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - ps4-port-bootstrap-2026-10-21
+    paths:
+      - "scripts/build-ps4.sh"
+      - "cmake/ps4-wrapper.cmake"
+      - "vita3k/**"
+      - "external/CMakeLists.txt"
+      - ".github/workflows/build-ps4-pkg.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-package:
+    # This job deliberately requires a runner with the real PS4 SDK/sysroot and
+    # prebuilt PS4 dependencies. GitHub-hosted Ubuntu runners do not provide these.
+    runs-on: [self-hosted, linux, x64, ps4-toolchain]
+    timeout-minutes: 180
+    env:
+      VITA3K_PS4_OUT_DIR: ${{ github.workspace }}/out
+      VITA3K_PS4_BUILD_DIR: ${{ github.workspace }}/build-ps4
+    steps:
+      - name: Check out VitaPS4
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Verify PS4 build environment
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          : "${OO_PS4_TOOLCHAIN:?Runner must define OO_PS4_TOOLCHAIN}"
+          : "${PS4_TOOLCHAIN_BIN:?Runner must define PS4_TOOLCHAIN_BIN}"
+          : "${PS4_SYSROOT:?Runner must define PS4_SYSROOT}"
+          : "${VITA3K_PS4_RUNTIME_LIBRARIES:?Runner must define VITA3K_PS4_RUNTIME_LIBRARIES}"
+          test -x "$PS4_TOOLCHAIN_BIN/ps4-cc"
+          test -x "$PS4_TOOLCHAIN_BIN/ps4-c++"
+          test -d "$PS4_SYSROOT/include"
+          test -d "$PS4_SYSROOT/lib"
+          echo "PS4 toolchain/sysroot preflight passed."
+
+      - name: Build Vita3K and package PKG
+        shell: bash
+        run: bash scripts/build-ps4.sh
+
+      - name: Verify and upload PKG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vita3K-PS4-Prototype-PKG
+          path: out/Vita3K-PS4-Prototype-v*.pkg
+          if-no-files-found: error
+          retention-days: 14
