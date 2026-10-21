@@ -18,7 +18,7 @@ concurrency:
 jobs:
   import-source:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Check out VitaPS4 destination
         uses: actions/checkout@v4
@@ -32,10 +32,15 @@ jobs:
           git clone --depth 1 --branch ps4-port-prototype-2026-10-21 https://github.com/ripevil3-commits/Vita3K.git /tmp/vita3k-source
           test -f /tmp/vita3k-source/CMakeLists.txt
           test -f /tmp/vita3k-source/vita3k/ps4/main_ps4.cpp
+          if [ -f /tmp/vita3k-source/.gitmodules ]; then
+            git -C /tmp/vita3k-source submodule update --init --recursive
+          fi
 
       - name: Copy source files into this repository
         run: |
-          rsync -a --exclude='.git' /tmp/vita3k-source/ ./
+          # Keep the destination repository's Actions workflows. This token can write
+          # repository contents, but GitHub blocks it from pushing new workflow files.
+          rsync -a --exclude='.git' --exclude='.github/workflows/' /tmp/vita3k-source/ ./
           git status --short
 
       - name: Commit imported source
