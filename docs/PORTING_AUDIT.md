@@ -37,23 +37,23 @@ References:
 - [PS4SX2 PS4 build driver](https://github.com/iHaiDeeZ/PS4SX2/blob/main/ps4/build-ps4.sh)
 - [PS4SX2 package helper](https://github.com/iHaiDeeZ/PS4SX2/blob/main/ps4/make-pkg.sh)
 
-## Blockers, in order
+## Next blockers, in order
 
-### 0. Prove the toolchain and package pipeline
+### 0. Native build/package pipeline — completed in CI
 
-✅ Build and package both a tiny native PS4 app and an SDL2 menu/controller shell using OpenOrbis v0.5.4 — completed in CI. Remaining: install the locally rebuilt shell package with GoldHEN on a test PS4, confirm video output and controller handling, and collect logs. The repository's smoke builder and SDL2 shell builder ran successfully in GitHub Actions against OpenOrbis v0.5.4. Both C sources compiled, linked to ELF files, converted to eboot, and packaged as PKGs. The CI job does not upload either package, and no real-console launch has yet been verified.
+The smoke builder and SDL2 shell builder passed GitHub Actions against OpenOrbis v0.5.4. Both C sources compiled, linked to ELF files, converted to `eboot.bin`, and packaged as PKGs. The CI run does not upload the packages because the local package stage includes OpenOrbis runtime modules. No real-console launch has yet been verified.
 
 ### 1. Verify the shell on real hardware
 
-A separate SDL2 shell prototype now draws a menu and reacts to input events; its PKG has been generated successfully in CI. It is not yet verified on-console, and its “Start Vita3K” action is explicitly a placeholder because the emulator core is not linked.
+Install a locally rebuilt `VitaPS4-SHELL-v00.01.pkg` with GoldHEN on a test PS4, confirm video output and controller navigation, confirm Options exits cleanly, and collect logs. The “Start Vita3K” action is intentionally a placeholder because the emulator core is not linked.
 
-### 2. Add a PS4-specific build target
+### 2. Add a PS4-specific build target in Vita3K
 
-Add an explicit CMake option/platform condition for PS4. Do not change the normal Windows/Linux/macOS/Android targets. Exclude desktop-only Qt integrations, auto-updaters, Discord presence and OS-specific windowing from the PS4 target where they do not apply.
+Add an explicit CMake option/platform condition for PS4 on a separate feature branch. Preserve the existing Windows/Linux/macOS/Android targets. Gate off desktop Qt integration, Qt translation steps, Discord Rich Presence and incompatible host-OS assumptions.
 
-### 3. Bring up the integrated application shell
+### 3. Port the platform/frontend layer
 
-Create a PS4 entry point and front end that can draw a basic screen, read DualShock 4 input, handle exit/navigation, and read/write files under the app's writable data directory. This should be tested before linking the full emulator core.
+The current desktop `main.cpp` directly initializes Qt and host paths. The existing SDL frontend links **SDL3**, creates a window, initializes subsystems, launches an `AppSessionController`, and creates an SDL Vulkan surface. The SDL2 shell in this repository is not a drop-in SDL3 replacement. Build or implement a PS4-specific frontend/WSI boundary and writable data paths before linking the full core. See [CORE_INTEGRATION_MAP.md](CORE_INTEGRATION_MAP.md).
 
 ### 4. Port dependencies and runtime assumptions
 
@@ -61,11 +61,11 @@ Cross-build the minimal dependency set first. Confirm C++23 support, threading, 
 
 ### 5. Graphics backend
 
-Vita3K currently compiles both OpenGL and Vulkan renderer code. Decide on one PS4-supported path and gate the other renderer out at configure time. This is likely the largest integration task because GPU submission and driver/runtime expectations are platform-specific.
+Vita3K currently compiles both OpenGL and Vulkan renderer code. Decide on one PS4-supported path and gate the other renderer out at configure time. This is likely a major integration task because GPU submission and driver/runtime expectations are platform-specific. PS4SX2 and M33 demonstrate the scale of the required Mesa/RADV and console WSI work; their code is a reference, not a drop-in patch.
 
 ### 6. Integrate Vita3K and package
 
-Only after the app shell, CPU/JIT and renderer can be built separately should we link Vita3K core modules, add game-library/config paths, stage required assets, generate `sce_sys/param.sfo`, and package a PKG. Final status requires a real console test and logs.
+Only after the platform shell, CPU/JIT and renderer can be built separately should we link Vita3K core modules, initialize the emulated environment, add game-library/config paths, stage required assets, generate `sce_sys/param.sfo`, and package a PKG. Final status requires a real console test and logs.
 
 ## Non-goals for the first milestone
 
