@@ -80,10 +80,16 @@ add_subdirectory(libfat16)
 add_library(miniz STATIC miniz/miniz.c miniz/miniz.h)
 target_include_directories(miniz PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/miniz")
 
-# On PS4, use an SDL3 installation cross-built for the OpenOrbis ABI.
-# That build supplies the console audio/gamepad drivers and disables desktop video.
+# The public SDL3 source tree does not include the separate PS4 backend.
+# Fail with a targeted message rather than silently trying to build the host SDL3 sources
+# or selecting a desktop audio/controller driver for an Orbis target.
 if(VITA3K_PS4)
-	find_package(SDL3 CONFIG REQUIRED)
+	find_package(SDL3 CONFIG QUIET)
+	if(NOT SDL3_FOUND OR NOT TARGET SDL3::SDL3)
+		message(FATAL_ERROR
+			"VITA3K_PS4 requires a PS4-ABI SDL3Config.cmake package that exports SDL3::SDL3. "
+			"The bundled upstream SDL3 source does not contain the separate PS4 backend; see docs/PS4_BUILD.md.")
+	endif()
 else()
 	add_subdirectory(sdl)
 endif()
