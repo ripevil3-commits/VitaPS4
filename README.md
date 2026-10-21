@@ -19,18 +19,18 @@ bash scripts/check-openorbis-env.sh
 bash scripts/build-smoke.sh
 ```
 
-The smoke test builds a tiny C application and packages it as `out/VitaPS4-SMOKE-v00.01.pkg`. It prints a startup message, waits five seconds, and exits. It is **not Vita3K** and does not emulate any games. The packaging script copies the OpenOrbis sample icon and runtime modules from your local SDK into the generated package; those files are not stored in this repository. Keep the generated package private and install it only on a test console with GoldHEN.
+The smoke test builds a tiny C application and packages it as `out/VitaPS4-SMOKE-v00.01.pkg`. It prints a startup message, waits five seconds, and exits. The SDL2 shell prototype builds as `out/VitaPS4-SHELL-v00.01.pkg`; it draws a simple menu and handles SDL keyboard/joystick events, with a placeholder action because the Vita3K core is not linked yet. Neither app emulates games. Both targets were built and packaged in CI against OpenOrbis v0.5.4; neither has been launched on real PS4 hardware. The packaging script copies the OpenOrbis sample icon and runtime modules from your local SDK into generated packages; those files are not stored in this repository. Keep generated packages private and install them only on a test console with GoldHEN.
 
-The smoke build and PKG **were successfully created in GitHub Actions** using OpenOrbis v0.5.4. This validates the Linux cross-compile/link/package pipeline for the tiny C test only. The generated PKG was not retained as a downloadable artifact, and the app has **not** been launched on real PS4 hardware. Passing CI is not proof of console runtime compatibility.
+The smoke and SDL2 shell PKGs were successfully created in GitHub Actions using OpenOrbis v0.5.4. This validates the compile/link/package pipeline for those two test apps only. The generated PKGs were not retained as downloadable artifacts, and neither app has been launched on real PS4 hardware. Passing CI is not proof of console runtime compatibility.
 
 ## Porting roadmap
 
-1. ✅ Validate cross-compilation and PKG creation with the smoke test in CI.
-2. Launch the generated smoke app on a test PS4 with GoldHEN; verify exit behavior and capture logs.
-3. Replace the five-second console smoke program with a minimal visible shell and controller input.
-4. Add a PS4-specific Vita3K CMake target without breaking desktop/Android targets.
-5. Port the minimum dependency set and runtime assumptions for the PS4 ABI.
-6. Bring up one compatible renderer path, then incrementally integrate Vita3K core and test on hardware.
+1. ✅ Build and package a native smoke test plus SDL2 shell in CI using OpenOrbis v0.5.4.
+2. Launch the shell on a test PS4 with GoldHEN; verify video output, controller input, menu navigation, and clean exit.
+3. Add an explicit PS4 CMake path in a feature branch of Vita3K, keeping desktop/Android targets unchanged.
+4. Cross-build the minimum CPU/JIT and support libraries, with desktop Qt and Discord features gated off for PS4.
+5. Bring up Vita3K's renderer with an actual PS4-compatible Vulkan/runtime path.
+6. Integrate core initialization and legally obtained user content only after the shell, JIT, and renderer have been tested.
 
 See the [source audit and blocker list](docs/PORTING_AUDIT.md) and the [reference-port analysis of PS4SX2 and M33](docs/REFERENCE_PORTS.md).
 
