@@ -162,7 +162,7 @@ require(
     "Build documentation describes silent SDL3 fallback and native input",
     "silent audio" in docs
     and "ScePad" in docs
-    and "Major blockers" in docs,
+    and "Known blockers" in docs,
     "document the headless SDL3 fallback, native input, and remaining platform blockers",
 )
 
