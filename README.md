@@ -9,9 +9,9 @@ Experimental effort to port **Vita3K** into a native PS4 homebrew application fo
 - Vita3K fork: https://github.com/ripevil3-commits/Vita3K
 - Official Vita3K project: https://github.com/Vita3K/Vita3K
 
-## First milestone: validate the PS4 build path
+## Native PS4 test apps
 
-From a Linux/WSL shell with OpenOrbis and Clang/LLD installed, set `OO_PS4_TOOLCHAIN` to the root of the installed toolchain, then run:
+From a Linux/WSL shell with OpenOrbis and Clang/LLD installed, set `OO_PS4_TOOLCHAIN` to the root of the installed toolchain. Build the tiny process smoke test:
 
 ```sh
 export OO_PS4_TOOLCHAIN=/path/to/OpenOrbis-PS4-Toolchain
@@ -19,9 +19,16 @@ bash scripts/check-openorbis-env.sh
 bash scripts/build-smoke.sh
 ```
 
-The smoke test builds a tiny C application and packages it as `out/VitaPS4-SMOKE-v00.01.pkg`. It prints a startup message, waits five seconds, and exits. The SDL2 shell prototype builds as `out/VitaPS4-SHELL-v00.01.pkg`; it draws a simple menu and handles SDL keyboard/joystick events, with a placeholder action because the Vita3K core is not linked yet. Neither app emulates games. Both targets were built and packaged in CI against OpenOrbis v0.5.4; neither has been launched on real PS4 hardware. The packaging script copies the OpenOrbis sample icon and runtime modules from your local SDK into generated packages; those files are not stored in this repository. Keep generated packages private and install them only on a test console with GoldHEN.
+Build the visible SDL2 menu/controller shell separately:
 
-The smoke and SDL2 shell PKGs were successfully created in GitHub Actions using OpenOrbis v0.5.4. This validates the compile/link/package pipeline for those two test apps only. The generated PKGs were not retained as downloadable artifacts, and neither app has been launched on real PS4 hardware. Passing CI is not proof of console runtime compatibility.
+```sh
+VITAPS4_APP=shell bash scripts/check-openorbis-env.sh
+bash scripts/build-shell.sh
+```
+
+The smoke package is written to `out/VitaPS4-SMOKE-v00.01.pkg`. The shell package is written to `out/VitaPS4-SHELL-v00.01.pkg`. Both targets compiled, linked, and packaged successfully in GitHub Actions against OpenOrbis v0.5.4. The shell draws a simple menu and handles SDL keyboard/joystick events, but its “Start Vita3K” action is a placeholder because the emulator core is not linked.
+
+Neither package has been launched on real PS4 hardware, and neither package is a Vita3K emulator. The CI job deliberately does not upload the generated PKGs: the package stage includes runtime module files from the local OpenOrbis SDK. Keep locally generated packages private and do not redistribute SDK/runtime files unless their licenses explicitly allow it.
 
 ## Porting roadmap
 
@@ -30,10 +37,10 @@ The smoke and SDL2 shell PKGs were successfully created in GitHub Actions using 
 3. Add an explicit PS4 CMake path in a feature branch of Vita3K, keeping desktop/Android targets unchanged.
 4. Cross-build the minimum CPU/JIT and support libraries, with desktop Qt and Discord features gated off for PS4.
 5. Bring up Vita3K's renderer with an actual PS4-compatible Vulkan/runtime path.
-6. Integrate core initialization and legally obtained user content only after the shell, JIT, and renderer have been tested.
+6. Integrate core initialization and user-owned game content only after the shell, JIT, and renderer have been tested.
 
-See the [source audit and blocker list](docs/PORTING_AUDIT.md) and the [reference-port analysis of PS4SX2 and M33](docs/REFERENCE_PORTS.md).
+See the [source audit and blocker list](docs/PORTING_AUDIT.md), the [reference-port analysis of PS4SX2 and M33](docs/REFERENCE_PORTS.md), and the [Vita3K core integration map](docs/CORE_INTEGRATION_MAP.md).
 
 ## Licensing
 
-Vita3K is GPLv2-licensed. Check the license of every dependency and preserve the relevant notices when modifying or distributing a port. The repository does not include game files, firmware, keys, or the locally supplied OpenOrbis runtime modules; do not redistribute packages that contain SDK/runtime files unless their licenses explicitly permit it.
+Vita3K is GPLv2-licensed. Check the license of every dependency and preserve the relevant notices when modifying or distributing a port. The repository does not include game files, firmware, keys, or the locally supplied OpenOrbis runtime modules.
