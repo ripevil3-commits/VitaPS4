@@ -1,46 +1,93 @@
-# VitaPS4
+# Vita3K
 
-Experimental effort to port **Vita3K** into a native PS4 homebrew application for jailbroken consoles running GoldHEN.
+[![C/C++ CI](https://github.com/Vita3K/Vita3K/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/Vita3K/Vita3K/actions/workflows/c-cpp.yml)
+[![Release](https://img.shields.io/github/v/release/Vita3K/Vita3K-builds?include_prereleases)](https://github.com/Vita3K/Vita3K/releases)
+[![Vita3K discord server](https://img.shields.io/discord/408916678911459329?color=5865F2&label=Vita3K%20&logo=discord&logoColor=white)](https://discord.gg/6aGwQzh)
 
-> **Status:** bootstrap / feasibility work. This repository does **not** yet contain a working Vita3K PS4 port or a tested emulator PKG.
+## Introduction
 
-## Source being ported
+Vita3K is an experimental PlayStation Vita emulator for Windows, Linux, macOS and Android.
 
-- Vita3K fork: https://github.com/ripevil3-commits/Vita3K
-- Official Vita3K project: https://github.com/Vita3K/Vita3K
+* [Website](https://vita3k.org/) (information for users)
+* [Wiki](https://github.com/Vita3K/Vita3K/wiki) (information for developers)
+* [Discord server](https://discord.gg/MaWhJVH) (recommended)
 
-## Native PS4 test apps
+## Experimental PS4 port
 
-From a Linux/WSL shell with OpenOrbis and Clang/LLD installed, set `OO_PS4_TOOLCHAIN` to the root of the installed toolchain. Build the tiny process smoke test:
+An experimental PS4 homebrew prototype is being developed on the separate branch
+[`ps4-port-prototype-2026-10-21`](https://github.com/ripevil3-commits/Vita3K/tree/ps4-port-prototype-2026-10-21).
+See [docs/PS4_BUILD.md](docs/PS4_BUILD.md) for the required cross-toolchain, SDL3, and RADV/VideoOut WSI setup.
 
-```sh
-export OO_PS4_TOOLCHAIN=/path/to/OpenOrbis-PS4-Toolchain
-bash scripts/check-openorbis-env.sh
-bash scripts/build-smoke.sh
-```
+This is **not a working PS4 emulator release**: the native entry point and platform/WSI changes are not yet
+verified by an end-to-end Vita3K build or a real-console launch. The regular desktop and Android targets remain
+the default when `VITA3K_PS4=OFF`.
 
-Build the visible SDL2 menu/controller shell separately:
+## Compatibility
 
-```sh
-VITAPS4_APP=shell bash scripts/check-openorbis-env.sh
-bash scripts/build-shell.sh
-```
+The emulator currently runs most homebrew programs and commercial games.
 
-The smoke package is written to `out/VitaPS4-SMOKE-v00.01.pkg`. The shell package is written to `out/VitaPS4-SHELL-v00.01.pkg`. Both targets compiled, linked, and packaged successfully in GitHub Actions against OpenOrbis v0.5.4. The shell draws a simple menu and handles SDL keyboard/joystick events, but its “Start Vita3K” action is a placeholder because the emulator core is not linked.
+- [Homebrew compatibility page](https://vita3k.org/compatibility-homebrew.html)
+- [Commercial compatibility page](https://vita3k.org/compatibility.html)
 
-Neither package has been launched on real PS4 hardware, and neither package is a Vita3K emulator. The CI job deliberately does not upload the generated PKGs: the package stage includes runtime module files from the local OpenOrbis SDK. Keep locally generated packages private and do not redistribute SDK/runtime files unless their licenses explicitly allow it.
+## Gallery
 
-## Porting roadmap
+|               **Persona 4 Golden** by Atlus                   |                     **A Rose in the Twilight** by Nippon Ichi Software                         |
+| :-----------------------------------------------------------: | :--------------------------------------------------------------------------------------------: |
+| ![Persona 4 Golden screenshot](./_readme/screenshots/P4G.png) | ![A Rose in the Twilight screenshot](./_readme/screenshots/A%20Rose%20in%20the%20Twilight.png) |
 
-1. ✅ Build and package a native smoke test plus SDL2 shell in CI using OpenOrbis v0.5.4.
-2. Launch the shell on a test PS4 with GoldHEN; verify video output, controller input, menu navigation, and clean exit.
-3. Add an explicit PS4 CMake path in a feature branch of Vita3K, keeping desktop/Android targets unchanged.
-4. Cross-build the minimum CPU/JIT and support libraries, with desktop Qt and Discord features gated off for PS4.
-5. Bring up Vita3K's renderer with an actual PS4-compatible Vulkan/runtime path.
-6. Integrate core initialization and user-owned game content only after the shell, JIT, and renderer have been tested.
+|                  **Alone with You** by Benjamin Rivers                     |                 **VA-11 HALL-A** by Sukeban Games                    |
+| :------------------------------------------------------------------------: | :------------------------------------------------------------------: |
+| ![Alone with You screenshot](./_readme/screenshots/Alone%20With%20You.png) | ![VA-11 HALL-A screenshot](./_readme/screenshots/VA-11%20HALL-A.png) |
 
-See the [source audit and blocker list](docs/PORTING_AUDIT.md), the [reference-port analysis of PS4SX2 and M33](docs/REFERENCE_PORTS.md), and the [Vita3K core integration map](docs/CORE_INTEGRATION_MAP.md).
+|              **Fruit Ninja** by Halfbrick Studios                  |                **Jetpack Joyride** by Halfbrick Studios                    |
+| :----------------------------------------------------------------: | :------------------------------------------------------------------------: |
+| ![Fruit Ninja Screenshot](./_readme/screenshots/Fruit%20Ninja.png) | ![Jetpack Joyride Screenshot](./_readme/screenshots/Jetpack%20Joyride.png) |
 
-## Licensing
+## License
 
-Vita3K is GPLv2-licensed. Check the license of every dependency and preserve the relevant notices when modifying or distributing a port. The repository does not include game files, firmware, keys, or the locally supplied OpenOrbis runtime modules.
+Vita3K is licensed under the **GPLv2** license. This is largely dictated by external dependencies, most notably Unicorn.
+
+## Downloads
+
+You can download the latest builds from [here](https://github.com/Vita3K/Vita3K/releases/tag/continuous).
+
+* Windows
+  * Requirements:
+    * [Microsoft Visual C++ 2015-2022 Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe)
+* Linux
+  * Arch based:
+    * [vita3k-bin](https://aur.archlinux.org/packages/vita3k-bin)<sup><small>AUR</small></sup>
+    * [vita3k-git](https://aur.archlinux.org/packages/vita3k-git)<sup><small>AUR</small></sup>
+  * Requirements:
+    * xdg-desktop-portal
+    * OpenGL or Vulkan runtime libraries
+* Android
+    * [Adreno drivers](https://github.com/K11MCH1/AdrenoToolsDrivers/releases/)
+* Others
+  * [Download Artifact](https://github.com/Vita3K/Vita3K/actions?query=event%3Apush+is%3Asuccess+branch%3Amaster)
+  * [Old builds](https://github.com/Vita3K/Vita3K-builds/releases)
+
+## Building
+
+Please see [`building.md`](./building.md).
+
+## Running
+Check our [quickstart guide](https://vita3k.org/quickstart) to make sure your computer meets the minimum requirements to run Vita3K.  
+Don't forget to have your graphics driver up to date and to install the [Visual C++ 2015-2022 Redistributable](https://aka.ms/vs/17/release/VC_redist.x64.exe) if you are a Windows user.  
+
+## Bugs and issues
+The project is in an early stage, so please be mindful when opening new issues. Expect crashes, glitches, low compatibility and poor performance.
+
+## Thanks
+Thanks go out to people who offered advice or otherwise made this project possible, such as Davee, korruptor, Rinnegatamante, ScHlAuChi, Simon Kilroy, TheFlow, xerpi, xyz, Yifan Lu and many others.
+
+## Donations
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/vita3k)
+<br>
+Thank you to the supporters and to all those who support us on our [ko-fi](https://ko-fi.com/vita3K).
+* Among them, those who subscribed to the Nibble Tier and upper: **j0hnnybrav0, Mored4u, TacoOblivion, Undeadbob and uplush**
+
+## Note
+The purpose of this emulator is not to enable illegal activity. You can dump games from a Vita by using [NoNpDrm](https://github.com/TheOfficialFloW/NoNpDrm) or [FAGDec](https://github.com/CelesteBlue-dev/PSVita-RE-tools/tree/master/FAGDec/build). You can get homebrew programs from [VitaDB](https://www.rinnegatamante.eu/vitadb/#/).
+
+PlayStation, PlayStation Vita and PlayStation Network are all registered trademarks of Sony Interactive Entertainment Inc. This emulator is not related to or endorsed by Sony, or derived from confidential materials belonging to Sony.
