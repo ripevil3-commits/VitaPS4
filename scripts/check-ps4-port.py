@@ -32,6 +32,7 @@ cmake = read("vita3k/CMakeLists.txt")
 external_cmake = read("external/CMakeLists.txt")
 host = read("vita3k/sdl-frontend/src/frame_host_ps4.cpp")
 frontend_cmake = read("vita3k/sdl-frontend/CMakeLists.txt")
+ps4_input = read("vita3k/sdl-frontend/src/ps4_input.cpp")
 main = read("vita3k/ps4/main_ps4.cpp")
 session = read("vita3k/sdl-frontend/src/session.cpp")
 build = read("scripts/build-ps4.sh")
@@ -84,11 +85,36 @@ require(
     "external/CMakeLists.txt must wire a real loader and reject a headers-only PS4 Vulkan target",
 )
 require(
-    "PS4 SDL3 dependency fails clearly when its platform package is missing",
-    "find_package(SDL3 CONFIG QUIET)" in external_cmake
-    and "PS4-ABI SDL3Config.cmake" in external_cmake
-    and "separate PS4 backend" in external_cmake,
-    "external/CMakeLists.txt must explain that a PS4-built SDL3 package is required",
+    "PS4 can build bundled headless SDL3 when a target package is unavailable",
+    "VITA3K_PS4_USE_BUNDLED_SDL3_FALLBACK" in external_cmake
+    and "set(SDL_VIDEO OFF" in external_cmake
+    and "set(SDL_DUMMYAUDIO ON" in external_cmake
+    and "set(SDL_VIRTUAL_JOYSTICK ON" in external_cmake
+    and "add_subdirectory(sdl EXCLUDE_FROM_ALL)" in external_cmake,
+    "fallback must disable desktop video, enable silent audio and virtual joystick support",
+)
+require(
+    "Native ScePad input is translated to SDL3",
+    "sceUserServiceGetInitialUser" in ps4_input
+    and "scePadOpen" in ps4_input
+    and "scePadReadState" in ps4_input
+    and "SDL_AttachVirtualJoystick" in ps4_input
+    and "SDL_SetJoystickVirtualButton" in ps4_input
+    and "SDL_SetJoystickVirtualAxis" in ps4_input,
+    "native bridge must read ScePad and publish SDL virtual gamepad controls",
+)
+require(
+    "Native input is part of the PS4 frontend target",
+    "src/ps4_input.cpp" in frontend_cmake
+    and "VITA3K_PS4_PAD_LIBRARIES" in frontend_cmake,
+    "build the PS4 bridge and link ScePad/UserService libraries",
+)
+require(
+    "Native input is polled and cleaned up in the PS4 session",
+    "ps4_input::initialize()" in session
+    and "ps4_input::poll()" in session
+    and "ps4_input::shutdown()" in session,
+    "wire initialization, per-frame polling, and cleanup into the session",
 )
 require(
     "RADV headers take precedence and match the linked archive",
@@ -133,9 +159,11 @@ require(
     "document the headless surface and a real static loader",
 )
 require(
-    "Build documentation flags the unavailable public SDL3 backend",
-    "Sony's PlayStation-development NDA" in docs and "Major blockers" in docs,
-    "document the SDL3 PS4 backend blocker rather than implying stock SDL3 supports PS4",
+    "Build documentation describes silent SDL3 fallback and native input",
+    "silent audio" in docs
+    and "ScePad" in docs
+    and "Major blockers" in docs,
+    "document the headless SDL3 fallback, native input, and remaining platform blockers",
 )
 
 for item in passed:
