@@ -28,6 +28,13 @@ jobs:
         uses: actions/checkout@v4
       - name: Check PS4 source wiring
         run: python3 scripts/check-ps4-port.py
+      - name: Compile the PS4 FrameHost against Vulkan-Headers
+        run: |
+          c++ -std=c++23 -DVITA3K_PS4=1 \
+            -I vita3k/sdl-frontend/src \
+            -I vita3k/renderer/include \
+            -I external/VulkanMemoryAllocator-Hpp/Vulkan-Headers/include \
+            -fsyntax-only vita3k/sdl-frontend/src/frame_host_ps4.cpp
       - name: Parse PS4 build script
         shell: bash
         run: bash -n scripts/build-ps4.sh
