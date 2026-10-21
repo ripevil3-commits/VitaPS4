@@ -38,6 +38,24 @@ jobs:
             -I vita3k/renderer/include \
             -I external/VulkanMemoryAllocator-Hpp/Vulkan-Headers/include \
             -fsyntax-only vita3k/sdl-frontend/src/frame_host_ps4.cpp
+      - name: Compile the native ScePad-to-SDL3 bridge against public SDK headers
+        shell: bash
+        run: |
+          set -eu
+          ORBIS_INCLUDE="$RUNNER_TEMP/orbis-include"
+          mkdir -p "$ORBIS_INCLUDE/orbis/_types"
+          SDK_BASE="https://raw.githubusercontent.com/OpenOrbis/OpenOrbis-PS4-Toolchain/master/include/orbis"
+          curl -fsSL "$SDK_BASE/Pad.h" -o "$ORBIS_INCLUDE/orbis/Pad.h"
+          curl -fsSL "$SDK_BASE/UserService.h" -o "$ORBIS_INCLUDE/orbis/UserService.h"
+          curl -fsSL "$SDK_BASE/_types/pad.h" -o "$ORBIS_INCLUDE/orbis/_types/pad.h"
+          curl -fsSL "$SDK_BASE/_types/user.h" -o "$ORBIS_INCLUDE/orbis/_types/user.h"
+          curl -fsSL "$SDK_BASE/_types/errors.h" -o "$ORBIS_INCLUDE/orbis/_types/errors.h"
+          c++ -std=c++23 -DVITA3K_PS4=1 \
+            -I vita3k/sdl-frontend/src \
+            -I external/sdl/include \
+            -I external/sdl/include/build_config \
+            -I "$ORBIS_INCLUDE" \
+            -fsyntax-only vita3k/sdl-frontend/src/ps4_input.cpp
       - name: Parse PS4 build script
         shell: bash
         run: bash -n scripts/build-ps4.sh
