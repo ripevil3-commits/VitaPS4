@@ -1,0 +1,25 @@
+name: Validate Bash scripts
+
+on:
+  push:
+    branches:
+      - ps4-port-bootstrap-2026-10-21
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  bash-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Parse Bash scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          for script in scripts/*.sh; do
+            echo "Checking $script"
+            bash -n "$script"
+          done
