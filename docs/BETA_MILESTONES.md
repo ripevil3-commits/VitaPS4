@@ -23,7 +23,7 @@ This tracks the smallest honest beta target. A source import or passing script c
 
 ## Current evidence and limits
 
-The import branch contains the implementation work above, and GitHub Actions has passed prior source-contract, FrameHost syntax and shell checks. The newly added ScePad source is undergoing its first compile check against public OpenOrbis headers. None of those checks is an end-to-end PS4 cross-build or on-console test. A beta label is held until a real binary is built and launched.
+The import branch contains the implementation work above. On 2026-10-21, GitHub Actions passed the source-contract checks, compiled the PS4 FrameHost against Vulkan headers, compiled the ScePad-to-SDL3 bridge against public SDK headers, and parsed the build scripts. These are useful source-level checks, not an end-to-end PS4 cross-build: the complete Vita3K target has not been compiled with a prepared PS4 sysroot, and no PKG has been verified on a console. A beta label is held until a real binary is built and launched.
 
 ## Next critical path
 
