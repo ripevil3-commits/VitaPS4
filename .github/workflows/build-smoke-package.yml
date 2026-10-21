@@ -1,4 +1,4 @@
-name: Build native PS4 smoke package
+name: Build native PS4 test apps
 
 on:
   workflow_dispatch:
@@ -7,15 +7,18 @@ on:
       - ps4-port-bootstrap-2026-10-21
     paths:
       - "scripts/build-smoke.sh"
+      - "scripts/build-shell.sh"
+      - "scripts/build-ps4-app.sh"
       - "scripts/check-openorbis-env.sh"
       - "tests/smoke/**"
+      - "tests/shell/**"
       - ".github/workflows/build-smoke-package.yml"
 
 permissions:
   contents: read
 
 jobs:
-  build-smoke:
+  build-native-apps:
     runs-on: ubuntu-22.04
     timeout-minutes: 25
     env:
@@ -58,14 +61,21 @@ jobs:
           test -x "$sdk_root/bin/linux/create-gp4"
           test -x "$sdk_root/bin/linux/PkgTool.Core"
 
-      - name: Check smoke-build prerequisites
+      - name: Check smoke prerequisites
         run: bash scripts/check-openorbis-env.sh
 
-      - name: Build eboot and smoke PKG
+      - name: Build smoke test package
         run: bash scripts/build-smoke.sh
 
-      - name: Verify output
+      - name: Check SDL2 shell prerequisites
+        run: VITAPS4_APP=shell bash scripts/check-openorbis-env.sh
+
+      - name: Build SDL2 native shell package
+        run: bash scripts/build-shell.sh
+
+      - name: Verify packages were created
         run: |
           set -euo pipefail
           test -s out/VitaPS4-SMOKE-v00.01.pkg
-          echo "Smoke PKG created successfully (not a Vita3K emulator build)."
+          test -s out/VitaPS4-SHELL-v00.01.pkg
+          echo "Both native PS4 test PKGs were created. Neither package contains the Vita3K emulator core."
