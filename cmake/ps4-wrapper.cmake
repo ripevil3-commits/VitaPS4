@@ -7,7 +7,7 @@
 #   PS4_LLVM_VERSION=21
 #
 # SDL3, Boost.Filesystem, FFmpeg, glslang and all other external libraries must already be
-# built for the same PS4 ABI. The actual RADV/VideoOut WSI is passed separately to CMake.
+# built for the same PS4 ABI. A compatible static Vulkan loader and the exact matching RADV/Vulkan headers and archive must be wired through external/CMakeLists.txt.
 
 set(CMAKE_SYSTEM_NAME FreeBSD)
 set(CMAKE_SYSTEM_VERSION 9)
