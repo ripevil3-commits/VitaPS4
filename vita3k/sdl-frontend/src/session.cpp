@@ -16,6 +16,9 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "frame_host.h"
+#ifdef VITA3K_PS4
+#include "ps4_input.h"
+#endif
 
 #include <sdl-frontend/session.h>
 
@@ -179,14 +182,17 @@ int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchReques
                 window = nullptr;
             }
 #endif
+#ifdef VITA3K_PS4
+            ps4_input::shutdown();
+#endif
             SDL_Quit();
         };
 
         LOG_INFO("Booting game '{}'", launch_request.app_path);
 
 #ifdef VITA3K_PS4
-        // The PS4 SDL3 build is configured without video/camera/sensor APIs; VideoOut is owned
-        // by FrameHost's RADV display-surface provider, and ScePad arrives as SDL gamepad events.
+        // The PS4 SDL3 build is configured without video/camera/sensor APIs; RADV owns frame presentation,
+        // while the native ScePad bridge feeds controller state into SDL's virtual gamepad.
         if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMEPAD)) {
 #else
         if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC | SDL_INIT_SENSOR | SDL_INIT_CAMERA)) {
@@ -197,6 +203,10 @@ int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchReques
             break;
         }
 
+#ifdef VITA3K_PS4
+        if (!ps4_input::initialize())
+            LOG_WARN("Native ScePad bridge did not initialize; the frontend may have no controller input.");
+#endif
         refresh_controllers(emuenv.ctrl, emuenv);
         if (hooks.on_init)
             hooks.on_init();
@@ -280,8 +290,8 @@ int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchReques
             cleanup_launch(app::AppSessionStopReason::LaunchFailure);
             break;
         }
-        // No SDL_Window exists on PS4. The PS4 FrameHost creates a Vulkan display surface directly
-        // through the configured RADV/VideoOut WSI and presents using the PS4 swapchain path.
+        // No SDL_Window exists on PS4. FrameHost creates a Vulkan headless surface supplied by the
+        // configured RADV/VideoOut runtime; the runtime owns swapchain presentation.
 #endif
 
         if (!session.initialize_renderer(frame_host)) {
@@ -313,6 +323,9 @@ int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchReques
 
         bool running = !pending_launch_request.has_value();
         while (running) {
+#ifdef VITA3K_PS4
+            ps4_input::poll();
+#endif
             SDL_Event event;
             while (SDL_PollEvent(&event)) {
                 switch (event.type) {
