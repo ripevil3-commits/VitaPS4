@@ -1,4 +1,4 @@
-// Vita3K PS4 display host. Requires an adapted RADV/VideoOut VK_KHR_display WSI.
+// Vita3K PS4 display host using the RADV headless-surface WSI.
 // Copyright (C) 2026 Vita3K team
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -9,19 +9,6 @@
 #include <vector>
 
 namespace sdl_frontend {
-namespace {
-
-template <typename T>
-T instance_function(VkInstance instance, const char *name) {
-    return reinterpret_cast<T>(vkGetInstanceProcAddr(instance, name));
-}
-
-void log_failure(const char *operation, VkResult result) {
-    std::fprintf(stderr, "[Vita3K-PS4] %s failed (VkResult %d)\n",
-                 operation, static_cast<int>(result));
-}
-
-} // namespace
 
 FrameHost::FrameHost() = default;
 
@@ -34,151 +21,55 @@ const renderer::VulkanSurfaceProvider *FrameHost::vulkan_surface_provider() cons
 }
 
 std::vector<const char *> FrameHost::instance_extensions() const {
-    // The WSI adapter must implement these display and presentation entry points over VideoOut.
-    return {VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_DISPLAY_EXTENSION_NAME};
+    // The matching orbis-ports Mesa/RADV WSI implements headless surfaces backed by VideoOut.
+    // A generic Vulkan-Headers package or a desktop RADV build is not sufficient.
+    return {
+        VK_KHR_SURFACE_EXTENSION_NAME,
+        VK_EXT_HEADLESS_SURFACE_EXTENSION_NAME,
+    };
 }
 
 VkSurfaceKHR FrameHost::create_surface(VkInstance instance) const {
-    const auto enumerate_devices =
-        instance_function<PFN_vkEnumeratePhysicalDevices>(instance, "vkEnumeratePhysicalDevices");
-    const auto enumerate_displays =
-        instance_function<PFN_vkGetPhysicalDeviceDisplayPropertiesKHR>(instance, "vkGetPhysicalDeviceDisplayPropertiesKHR");
-    const auto enumerate_planes =
-        instance_function<PFN_vkGetPhysicalDeviceDisplayPlanePropertiesKHR>(instance, "vkGetPhysicalDeviceDisplayPlanePropertiesKHR");
-    const auto supported_displays =
-        instance_function<PFN_vkGetDisplayPlaneSupportedDisplaysKHR>(instance, "vkGetDisplayPlaneSupportedDisplaysKHR");
-    const auto enumerate_modes =
-        instance_function<PFN_vkGetDisplayModePropertiesKHR>(instance, "vkGetDisplayModePropertiesKHR");
-    const auto plane_capabilities =
-        instance_function<PFN_vkGetDisplayPlaneCapabilitiesKHR>(instance, "vkGetDisplayPlaneCapabilitiesKHR");
-    const auto create_surface =
-        instance_function<PFN_vkCreateDisplayPlaneSurfaceKHR>(instance, "vkCreateDisplayPlaneSurfaceKHR");
+    if (instance == VK_NULL_HANDLE) {
+        std::fprintf(stderr, "[Vita3K-PS4] cannot create a surface from a null VkInstance\n");
+        return VK_NULL_HANDLE;
+    }
 
-    if (instance == VK_NULL_HANDLE || !enumerate_devices || !enumerate_displays ||
-        !enumerate_planes || !supported_displays || !enumerate_modes ||
-        !plane_capabilities || !create_surface) {
+    const auto create_headless_surface =
+        reinterpret_cast<PFN_vkCreateHeadlessSurfaceEXT>(
+            vkGetInstanceProcAddr(instance, "vkCreateHeadlessSurfaceEXT"));
+    if (!create_headless_surface) {
         std::fprintf(stderr,
-            "[Vita3K-PS4] RADV/VideoOut WSI is missing VK_KHR_display entry points. "
-            "A headless surface is not a substitute for console presentation.\n");
+            "[Vita3K-PS4] vkCreateHeadlessSurfaceEXT is unavailable. "
+            "Use the matching orbis-ports Mesa/RADV build with HAVE_ORBIS_PLATFORM and VideoOut WSI.\n");
         return VK_NULL_HANDLE;
     }
 
-    uint32_t device_count = 0;
-    VkResult result = enumerate_devices(instance, &device_count, nullptr);
-    if (result != VK_SUCCESS || device_count == 0) {
-        log_failure("vkEnumeratePhysicalDevices(count)", result);
+    VkHeadlessSurfaceCreateInfoEXT create_info{};
+    create_info.sType = VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT;
+
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
+    const VkResult result =
+        create_headless_surface(instance, &create_info, nullptr, &surface);
+    if (result != VK_SUCCESS || surface == VK_NULL_HANDLE) {
+        std::fprintf(stderr,
+            "[Vita3K-PS4] vkCreateHeadlessSurfaceEXT failed (VkResult %d)\n",
+            static_cast<int>(result));
         return VK_NULL_HANDLE;
-    }
-    std::vector<VkPhysicalDevice> devices(device_count);
-    result = enumerate_devices(instance, &device_count, devices.data());
-    if (result != VK_SUCCESS || device_count == 0) {
-        log_failure("vkEnumeratePhysicalDevices(list)", result);
-        return VK_NULL_HANDLE;
-    }
-
-    for (const VkPhysicalDevice physical_device : devices) {
-        uint32_t display_count = 0;
-        result = enumerate_displays(physical_device, &display_count, nullptr);
-        if (result != VK_SUCCESS || display_count == 0)
-            continue;
-        std::vector<VkDisplayPropertiesKHR> displays(display_count);
-        result = enumerate_displays(physical_device, &display_count, displays.data());
-        if (result != VK_SUCCESS)
-            continue;
-
-        uint32_t plane_count = 0;
-        result = enumerate_planes(physical_device, &plane_count, nullptr);
-        if (result != VK_SUCCESS || plane_count == 0)
-            continue;
-        std::vector<VkDisplayPlanePropertiesKHR> planes(plane_count);
-        result = enumerate_planes(physical_device, &plane_count, planes.data());
-        if (result != VK_SUCCESS)
-            continue;
-
-        for (const VkDisplayPropertiesKHR &display : displays) {
-            uint32_t mode_count = 0;
-            result = enumerate_modes(physical_device, display.display, &mode_count, nullptr);
-            if (result != VK_SUCCESS || mode_count == 0)
-                continue;
-            std::vector<VkDisplayModePropertiesKHR> modes(mode_count);
-            result = enumerate_modes(physical_device, display.display, &mode_count, modes.data());
-            if (result != VK_SUCCESS || mode_count == 0)
-                continue;
-
-            for (uint32_t plane_index = 0; plane_index < plane_count; ++plane_index) {
-                uint32_t supported_count = 0;
-                result = supported_displays(physical_device, plane_index, &supported_count, nullptr);
-                if (result != VK_SUCCESS || supported_count == 0)
-                    continue;
-                std::vector<VkDisplayKHR> supported(supported_count);
-                result = supported_displays(physical_device, plane_index, &supported_count, supported.data());
-                if (result != VK_SUCCESS)
-                    continue;
-
-                bool compatible = false;
-                for (const VkDisplayKHR candidate : supported) {
-                    if (candidate == display.display) {
-                        compatible = true;
-                        break;
-                    }
-                }
-                if (!compatible)
-                    continue;
-
-                VkDisplayPlaneCapabilitiesKHR capabilities{};
-                result = plane_capabilities(physical_device, modes.front().displayMode,
-                                            plane_index, &capabilities);
-                if (result != VK_SUCCESS)
-                    continue;
-
-                VkDisplayPlaneAlphaFlagBitsKHR alpha = VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR;
-                if ((capabilities.supportedAlpha & alpha) == 0) {
-                    if ((capabilities.supportedAlpha & VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR) != 0)
-                        alpha = VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR;
-                    else if ((capabilities.supportedAlpha & VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR) != 0)
-                        alpha = VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR;
-                    else if ((capabilities.supportedAlpha & VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR) != 0)
-                        alpha = VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR;
-                    else
-                        continue;
-                }
-
-                VkDisplaySurfaceCreateInfoKHR create_info{};
-                create_info.sType = VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR;
-                create_info.displayMode = modes.front().displayMode;
-                create_info.planeIndex = plane_index;
-                create_info.planeStackIndex = planes[plane_index].currentStackIndex;
-                create_info.transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-                create_info.globalAlpha = 1.0f;
-                create_info.alphaMode = alpha;
-                create_info.imageExtent = modes.front().parameters.visibleRegion;
-
-                VkSurfaceKHR surface = VK_NULL_HANDLE;
-                result = create_surface(instance, &create_info, nullptr, &surface);
-                if (result != VK_SUCCESS || surface == VK_NULL_HANDLE) {
-                    log_failure("vkCreateDisplayPlaneSurfaceKHR", result);
-                    continue;
-                }
-
-                width = static_cast<int>(create_info.imageExtent.width);
-                height = static_cast<int>(create_info.imageExtent.height);
-                std::fprintf(stderr, "[Vita3K-PS4] selected VideoOut display mode %ux%u\n",
-                             create_info.imageExtent.width, create_info.imageExtent.height);
-                return surface;
-            }
-        }
     }
 
     std::fprintf(stderr,
-        "[Vita3K-PS4] no compatible VK_KHR_display mode/plane was found; check the VideoOut WSI adapter.\n");
-    return VK_NULL_HANDLE;
+        "[Vita3K-PS4] created Orbis RADV headless surface; VideoOut presentation depends on the matching Mesa WSI\n");
+    return surface;
 }
 
 void FrameHost::destroy_surface(VkInstance instance, VkSurfaceKHR surface) const {
     if (instance == VK_NULL_HANDLE || surface == VK_NULL_HANDLE)
         return;
+
     const auto destroy =
-        instance_function<PFN_vkDestroySurfaceKHR>(instance, "vkDestroySurfaceKHR");
+        reinterpret_cast<PFN_vkDestroySurfaceKHR>(
+            vkGetInstanceProcAddr(instance, "vkDestroySurfaceKHR"));
     if (destroy)
         destroy(instance, surface, nullptr);
 }
@@ -207,7 +98,7 @@ void FrameHost::done_current() {
 }
 
 void FrameHost::swap_buffers() {
-    // Vulkan swapchain presentation and VideoOut flips are owned by the linked WSI adapter.
+    // RADV's Orbis WSI queues the VideoOut flip through the swapchain presentation path.
 }
 
 bool FrameHost::set_vsync(bool) {
