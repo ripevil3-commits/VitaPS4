@@ -31,6 +31,12 @@ The standalone `tests/shell/main.c` in this repository uses **SDL2** from OpenOr
 - `vita3k/renderer` currently compiles both OpenGL and Vulkan sources and links SDL3 plus Vita3K graphics/util libraries. For PS4, renderer selection and the surface path must be explicit.
 - `external/CMakeLists.txt` checks that declared Git submodules are populated, then builds many vendored dependencies. A cross build must pin and initialize all required submodules and build each dependency for the PS4 ABI.
 
+## Current prototype branch
+
+The initial source-level integration now exists on the separate [Vita3K PS4 prototype branch](https://github.com/ripevil3-commits/Vita3K/tree/ps4-port-prototype-2026-10-21). It adds a guarded `VITA3K_PS4` CMake option, PS4 data paths, a Qt-free entry point, an SDL3 session path without an SDL desktop window, a Vulkan display-surface provider, and guards for unsupported SDL Cubeb/camera paths.
+
+This is still **source-level work only**. No complete Vita3K CMake build has succeeded on PS4, the required SDL3 PS4 build and RADV/VideoOut WSI/runtime libraries are not supplied by this repository, and there is no tested Vita3K PKG. See the branch's [PS4 build notes](https://github.com/ripevil3-commits/Vita3K/blob/ps4-port-prototype-2026-10-21/docs/PS4_BUILD.md).
+
 ## First source changes to make in Vita3K
 
 These are the planned changes for a separate feature branch; they have **not** yet been applied to the Vita3K repository.
