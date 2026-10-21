@@ -41,6 +41,8 @@ SDK="$(cd "$SDK" && pwd)"
 [[ -x "$PS4_TOOLCHAIN_BIN/ps4-cc" ]] || die "Missing PS4 compiler wrapper: $PS4_TOOLCHAIN_BIN/ps4-cc"
 [[ -x "$PS4_TOOLCHAIN_BIN/ps4-c++" ]] || die "Missing PS4 compiler wrapper: $PS4_TOOLCHAIN_BIN/ps4-c++"
 [[ -n "$RUNTIME_LIBS" ]] || die "Set VITA3K_PS4_RUNTIME_LIBRARIES to the semicolon-separated additional PS4 system/runtime libraries."
+[[ -n "$WSI_SOURCE" ]] || die "Set VITA3K_PS4_WSI_SOURCE to an adapted RADV/VideoOut WSI implementation source."
+need_file "$WSI_SOURCE"
 if [[ -n "$ORBIS_KIT_DIR" ]]; then
     need_file "$ORBIS_KIT_DIR/vkloader/CMakeLists.txt"
     [[ -f "$MESA_SRC/include/vulkan/vulkan_core.h" ]] || die "VITA3K_PS4_MESA_SRC must hold the matching Mesa Vulkan headers."
