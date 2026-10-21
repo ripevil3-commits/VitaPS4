@@ -9,6 +9,11 @@ PS4_TOOLCHAIN_BIN="${PS4_TOOLCHAIN_BIN:-$HOME/xemups4/toolchain/bin}"
 PS4_SYSROOT="${PS4_SYSROOT:-$HOME/xemups4-build/sysroot}"
 RUNTIME_INCLUDES="${VITA3K_PS4_RUNTIME_INCLUDE_DIRS:-}"
 RUNTIME_LIBS="${VITA3K_PS4_RUNTIME_LIBRARIES:-}"
+ORBIS_KIT_DIR="${VITA3K_PS4_ORBIS_KIT_DIR:-}"
+MESA_SRC="${VITA3K_PS4_MESA_SRC:-}"
+MESA_BUILD="${VITA3K_PS4_MESA_BUILD:-}"
+VULKAN_HEADERS_DIR="${VITA3K_PS4_VULKAN_HEADERS_DIR:-}"
+VULKAN_LOADER_LIBS="${VITA3K_PS4_VULKAN_LOADER_LIBRARIES:-}"
 BUILD_DIR="${VITA3K_PS4_BUILD_DIR:-$ROOT/build-ps4}"
 OUT_DIR="${VITA3K_PS4_OUT_DIR:-$ROOT/out}"
 PAID="${VITA3K_PS4_PAID:-0x3800000000000035}"
@@ -34,7 +39,16 @@ SDK="$(cd "$SDK" && pwd)"
 [[ -d "$PS4_SYSROOT" ]] || die "PS4 sysroot not found: $PS4_SYSROOT"
 [[ -x "$PS4_TOOLCHAIN_BIN/ps4-cc" ]] || die "Missing PS4 compiler wrapper: $PS4_TOOLCHAIN_BIN/ps4-cc"
 [[ -x "$PS4_TOOLCHAIN_BIN/ps4-c++" ]] || die "Missing PS4 compiler wrapper: $PS4_TOOLCHAIN_BIN/ps4-c++"
-[[ -n "$RUNTIME_LIBS" ]] || die "Set VITA3K_PS4_RUNTIME_LIBRARIES to the semicolon-separated PS4 RADV/Orbis link libraries."
+[[ -n "$RUNTIME_LIBS" ]] || die "Set VITA3K_PS4_RUNTIME_LIBRARIES to the semicolon-separated additional PS4 system/runtime libraries."
+if [[ -n "$ORBIS_KIT_DIR" ]]; then
+    need_file "$ORBIS_KIT_DIR/vkloader/CMakeLists.txt"
+    [[ -f "$MESA_SRC/include/vulkan/vulkan_core.h" ]] || die "VITA3K_PS4_MESA_SRC must hold the matching Mesa Vulkan headers."
+    [[ -f "$MESA_BUILD/src/amd/vulkan/libvulkan_radeon.a" ]] || die "VITA3K_PS4_MESA_BUILD must hold src/amd/vulkan/libvulkan_radeon.a."
+elif [[ -n "$VULKAN_LOADER_LIBS" ]]; then
+    [[ -f "$VULKAN_HEADERS_DIR/vulkan/vulkan_core.h" ]] || die "VITA3K_PS4_VULKAN_HEADERS_DIR must hold Vulkan headers built for the selected loader."
+else
+    die "Provide VITA3K_PS4_ORBIS_KIT_DIR + matching VITA3K_PS4_MESA_SRC/BUILD, or VITA3K_PS4_VULKAN_LOADER_LIBRARIES + VITA3K_PS4_VULKAN_HEADERS_DIR."
+fi
 need_exec "$SDK/bin/linux/create-fself"
 need_exec "$SDK/bin/linux/create-gp4"
 need_exec "$SDK/bin/linux/PkgTool.Core"
@@ -58,7 +72,12 @@ cmake -S "$ROOT" -B "$BUILD_DIR" \
     -DBoost_ROOT="$PS4_SYSROOT" \
     -DCMAKE_PREFIX_PATH="$PS4_SYSROOT" \
     -DVITA3K_PS4_RUNTIME_INCLUDE_DIRS="$RUNTIME_INCLUDES" \
-    -DVITA3K_PS4_RUNTIME_LIBRARIES="$RUNTIME_LIBS"
+    -DVITA3K_PS4_RUNTIME_LIBRARIES="$RUNTIME_LIBS" \
+    -DVITA3K_PS4_ORBIS_KIT_DIR="$ORBIS_KIT_DIR" \
+    -DVITA3K_PS4_MESA_SRC="$MESA_SRC" \
+    -DVITA3K_PS4_MESA_BUILD="$MESA_BUILD" \
+    -DVITA3K_PS4_VULKAN_HEADERS_DIR="$VULKAN_HEADERS_DIR" \
+    -DVITA3K_PS4_VULKAN_LOADER_LIBRARIES="$VULKAN_LOADER_LIBS"
 
 echo "[vita3k-ps4] compile"
 cmake --build "$BUILD_DIR" --target vita3k --parallel "${JOBS:-2}"
