@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Experimental Vita3K PS4 build + local PKG packaging.
-# Requires a prepared PS4 sysroot/toolchain, PS4-built dependencies, and RADV/VideoOut WSI.
+# Requires a prepared PS4 sysroot/toolchain, PS4-built dependencies, SDL3, and a matching static RADV Vulkan loader.
 set -Eeuo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
