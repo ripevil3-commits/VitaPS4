@@ -84,6 +84,13 @@ require(
     "external/CMakeLists.txt must wire a real loader and reject a headers-only PS4 Vulkan target",
 )
 require(
+    "PS4 SDL3 dependency fails clearly when its platform package is missing",
+    "find_package(SDL3 CONFIG QUIET)" in external_cmake
+    and "PS4-ABI SDL3Config.cmake" in external_cmake
+    and "separate PS4 backend" in external_cmake,
+    "external/CMakeLists.txt must explain that a PS4-built SDL3 package is required",
+)
+require(
     "RADV headers take precedence and match the linked archive",
     'target_include_directories(vulkan BEFORE INTERFACE "${VITA3K_PS4_MESA_SRC}/include")' in external_cmake
     and "libvulkan_radeon.a" in external_cmake,
