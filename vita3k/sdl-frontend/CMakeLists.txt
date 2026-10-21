@@ -16,3 +16,8 @@ add_library(
 target_include_directories(sdl-frontend PUBLIC include)
 target_link_libraries(sdl-frontend PUBLIC emuenv)
 target_link_libraries(sdl-frontend PRIVATE app audio config ctrl dialog ime motion renderer touch util SDL3::SDL3)
+if(VITA3K_PS4)
+	target_sources(sdl-frontend PRIVATE src/ps4_input.cpp)
+	set(VITA3K_PS4_PAD_LIBRARIES "ScePad;SceUserService" CACHE STRING "Orbis pad and user-service libraries")
+	target_link_libraries(sdl-frontend PRIVATE ${VITA3K_PS4_PAD_LIBRARIES})
+endif()
