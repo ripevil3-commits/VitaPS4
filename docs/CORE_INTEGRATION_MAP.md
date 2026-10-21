@@ -37,18 +37,19 @@ The initial source-level integration now exists on the separate [Vita3K PS4 prot
 
 This is still **source-level work only**. No complete Vita3K CMake build has succeeded on PS4, the required SDL3 PS4 build and RADV/VideoOut WSI/runtime libraries are not supplied by this repository, and there is no tested Vita3K PKG. See the branch's [PS4 build notes](https://github.com/ripevil3-commits/Vita3K/blob/ps4-port-prototype-2026-10-21/docs/PS4_BUILD.md).
 
-## First source changes to make in Vita3K
+## Remaining source tasks
 
-These are the planned changes for a separate feature branch; they have **not** yet been applied to the Vita3K repository.
+The prototype branch already contains the initial guarded CMake option, Qt-free entry point, PS4 data paths, SDL3 session adaptation, and a provider for the Vulkan display surface. The next work is no longer to add those same skeletons again; it is to make them compile and connect them to a real PS4 runtime.
 
-1. Add a `VITA3K_PS4` CMake option, default OFF. Reject invalid combinations such as Android + PS4, and leave existing desktop/Android targets unchanged.
-2. When that option is ON, do not include Qt setup, create `gui-qt`, link it, or generate Qt translation targets. Add a dedicated `vita3k/ps4/main_ps4.cpp` entry point instead of compiling the desktop `main.cpp`.
-3. Force Discord Rich Presence OFF in the PS4 configuration and begin with LTO disabled until the toolchain and link path are stable.
-4. Keep the emulator core libraries as normal CMake targets where possible. Gate platform-specific code in dependencies explicitly instead of globally redefining unrelated platform macros.
-5. Add a PS4-specific frontend/surface adapter. Do not link the SDL2 prototype from this repository into Vita3K as though it were SDL3-compatible.
-6. Select one renderer path. If Vulkan is selected, implement and test the PS4 WSI/surface submission path against the Mesa/RADV runtime before connecting the emulated app launch path.
-7. Use the existing `EmuEnvState`, config/path initialization, `app::init`, `init_libraries`, `app::init_apps_list`, and `app::AppSessionController` flow as the reference when writing the PS4 entry point; omit host-OS dialog/window assumptions and define PS4 writable data paths explicitly.
+1. Verify the new C++ sources and CMake target against the current Vita3K headers and templates. The branch has not had a complete PS4 cross-build yet, so API or linker errors may remain.
+2. Build SDL3 specifically for PS4, with working ScePad/gamepad and audio backends while desktop video/camera/sensor backends remain off. The staging SDL2 menu is not SDL3 and cannot be substituted directly.
+3. Connect a complete PS4 RADV/VideoOut WSI. The surface provider expects `VK_KHR_display` and `VK_KHR_surface`; the WSI must also provide the swapchain, queue submit/flip synchronization, and VideoOut presentation hooks.
+4. Cross-build Boost.Filesystem, shader tools, FFmpeg, and the remaining dependencies for the same PS4 ABI. The CMake option intentionally stops instead of compiling host-ABI Boost or using desktop SDL3.
+5. Produce `eboot.bin` and the PKG using the local OpenOrbis packaging tools, preserving the local SDK/runtime license restrictions.
+6. Test on actual hardware with GoldHEN, verify the shell and Vulkan presentation first, then load a legally obtained test title and collect logs.
 
+The standalone SDL2 shell PKG generated in CI validates only the packaging pipeline for a small native app; it does not validate any of the Vita3K-specific steps above.
+ 
 ## Expected dependency order
 
 ```text
