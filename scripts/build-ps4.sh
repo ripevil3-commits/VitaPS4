@@ -9,7 +9,6 @@ PS4_TOOLCHAIN_BIN="${PS4_TOOLCHAIN_BIN:-$HOME/xemups4/toolchain/bin}"
 PS4_SYSROOT="${PS4_SYSROOT:-$HOME/xemups4-build/sysroot}"
 RUNTIME_INCLUDES="${VITA3K_PS4_RUNTIME_INCLUDE_DIRS:-}"
 RUNTIME_LIBS="${VITA3K_PS4_RUNTIME_LIBRARIES:-}"
-WSI_SOURCE="${VITA3K_PS4_WSI_SOURCE:-}"
 ORBIS_KIT_DIR="${VITA3K_PS4_ORBIS_KIT_DIR:-}"
 MESA_SRC="${VITA3K_PS4_MESA_SRC:-}"
 MESA_BUILD="${VITA3K_PS4_MESA_BUILD:-}"
@@ -41,8 +40,6 @@ SDK="$(cd "$SDK" && pwd)"
 [[ -x "$PS4_TOOLCHAIN_BIN/ps4-cc" ]] || die "Missing PS4 compiler wrapper: $PS4_TOOLCHAIN_BIN/ps4-cc"
 [[ -x "$PS4_TOOLCHAIN_BIN/ps4-c++" ]] || die "Missing PS4 compiler wrapper: $PS4_TOOLCHAIN_BIN/ps4-c++"
 [[ -n "$RUNTIME_LIBS" ]] || die "Set VITA3K_PS4_RUNTIME_LIBRARIES to the semicolon-separated additional PS4 system/runtime libraries."
-[[ -n "$WSI_SOURCE" ]] || die "Set VITA3K_PS4_WSI_SOURCE to an adapted RADV/VideoOut WSI implementation source."
-need_file "$WSI_SOURCE"
 if [[ -n "$ORBIS_KIT_DIR" ]]; then
     need_file "$ORBIS_KIT_DIR/vkloader/CMakeLists.txt"
     [[ -f "$MESA_SRC/include/vulkan/vulkan_core.h" ]] || die "VITA3K_PS4_MESA_SRC must hold the matching Mesa Vulkan headers."
@@ -65,7 +62,7 @@ mkdir -p "$OUT_DIR" "$BUILD_DIR"
 OUT_DIR="$(cd "$OUT_DIR" && pwd)"
 BUILD_DIR="$(cd "$BUILD_DIR" && pwd)"
 
-echo "[vita3k-ps4] configure (experimental; using the linked RADV/VideoOut display WSI)"
+echo "[vita3k-ps4] configure (experimental; using the matching Mesa Orbis headless WSI)"
 cmake -S "$ROOT" -B "$BUILD_DIR" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_TOOLCHAIN_FILE="$ROOT/cmake/ps4-wrapper.cmake" \
