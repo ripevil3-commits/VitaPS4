@@ -1,7 +1,7 @@
 # Vita3K → PS4: source audit
 
 **Audit date:** 2026-10-21  
-**Status:** static source review only. No PS4 binary has been built or tested in this work session.
+**Status:** source audit plus successful automated native smoke build/package on 2026-10-21. No PS4 hardware launch test has been performed.
 
 ## Findings confirmed in the source
 
@@ -41,7 +41,7 @@ References:
 
 ### 0. Prove the toolchain and package pipeline
 
-Build a tiny native PS4 app, generate `eboot.bin` and a PKG using the selected OpenOrbis toolchain, install it with GoldHEN, and launch it on the target console. The repository now contains a smoke-build script and a matching prerequisite checker, but neither has yet been executed against an installed toolchain in this work session. A static source edit or passing environment check is not a hardware test.
+✅ Build a tiny native PS4 app and package it using OpenOrbis v0.5.4 — completed in CI. Remaining: install the locally rebuilt package with GoldHEN on a test PS4, confirm it launches and exits, and collect logs. The repository's smoke-build script and prerequisite checker ran successfully in GitHub Actions against OpenOrbis v0.5.4: the C source compiled, linked to an ELF, converted to eboot, and packaged as a PKG. The CI job does not upload the package, and no real-console launch has yet been verified.
 
 ### 1. Add a PS4-specific build target
 
