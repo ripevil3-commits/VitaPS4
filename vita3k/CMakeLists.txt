@@ -208,18 +208,8 @@ elseif(VITA3K_PS4)
 	target_include_directories(vita3k PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 	target_link_libraries(vita3k PRIVATE SDL3::SDL3 pugixml::pugixml)
 
-	# VK_EXT_headless_surface only creates a headless surface; it is not a VideoOut
-	# presentation implementation. Require the project-specific RADV/VideoOut WSI adapter
-	# and link it into this executable so missing presentation support fails at configure time.
-	set(VITA3K_PS4_WSI_SOURCE "" CACHE FILEPATH "Adapted PS4 RADV/VideoOut Vulkan WSI source")
-	if(NOT VITA3K_PS4_WSI_SOURCE OR NOT EXISTS "${VITA3K_PS4_WSI_SOURCE}")
-		message(FATAL_ERROR
-			"VITA3K_PS4 requires VITA3K_PS4_WSI_SOURCE: provide an adapted RADV/VideoOut WSI implementation.")
-	endif()
-	target_sources(vita3k PRIVATE "${VITA3K_PS4_WSI_SOURCE}")
-	# The adapted WSI wrapper intercepts the statically linked RADV ICD entrypoint.
-	target_link_options(vita3k PRIVATE "-Wl,--wrap=vk_icdGetInstanceProcAddr")
-
+	# The matching orbis-ports Mesa/RADV build implements the Orbis headless WSI and
+	# routes swapchain images through VideoOut. Vulkan-Headers alone does not do this.
 	set(VITA3K_PS4_RUNTIME_INCLUDE_DIRS "" CACHE STRING "Semicolon-separated include directories for the PS4 runtime")
 	set(VITA3K_PS4_RUNTIME_LIBRARIES "" CACHE STRING "Semicolon-separated additional PS4 Orbis system/runtime libraries")
 	if(NOT VITA3K_PS4_RUNTIME_LIBRARIES)
