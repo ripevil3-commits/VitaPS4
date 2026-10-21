@@ -271,6 +271,51 @@ elseif(ANDROID AND NOT (CMAKE_BUILD_TYPE STREQUAL "Release"))
 	endif()
 endif()
 
+# Vulkan-Headers alone only provides declarations. Vita3K calls the global vk* entry
+# points, but an Orbis eboot has no standard libvulkan.so loader. For PS4 builds, require
+# either the public orbis-porting-kit loader target (recommended; links the matching
+# RADV archive, zlib, SceGnmDriver and SceVideoOut) or an explicitly provided compatible
+# static loader library plus the exact headers used to build that loader.
+if(VITA3K_PS4)
+	set(VITA3K_PS4_ORBIS_KIT_DIR "" CACHE PATH "Path to orbis-porting-kit containing vkloader/")
+	set(VITA3K_PS4_MESA_SRC "" CACHE PATH "Matching orbis-ports/mesa-ps4 source tree containing include/vulkan/")
+	set(VITA3K_PS4_MESA_BUILD "" CACHE PATH "Matching Mesa build tree containing libvulkan_radeon.a")
+	set(VITA3K_PS4_VULKAN_HEADERS_DIR "" CACHE PATH "Vulkan header root matching a custom PS4 Vulkan loader")
+	set(VITA3K_PS4_VULKAN_LOADER_LIBRARIES "" CACHE STRING "Semicolon-separated static Vulkan loader libraries providing vkCreateInstance and related entry points")
+
+	if(VITA3K_PS4_ORBIS_KIT_DIR)
+		if(NOT EXISTS "${VITA3K_PS4_ORBIS_KIT_DIR}/vkloader/CMakeLists.txt")
+			message(FATAL_ERROR "VITA3K_PS4_ORBIS_KIT_DIR must contain vkloader/CMakeLists.txt")
+		endif()
+		if(NOT EXISTS "${VITA3K_PS4_MESA_SRC}/include/vulkan/vulkan_core.h")
+			message(FATAL_ERROR "VITA3K_PS4_MESA_SRC must contain include/vulkan/vulkan_core.h from the same Mesa build")
+		endif()
+		if(NOT EXISTS "${VITA3K_PS4_MESA_BUILD}/src/amd/vulkan/libvulkan_radeon.a")
+			message(FATAL_ERROR "VITA3K_PS4_MESA_BUILD must contain src/amd/vulkan/libvulkan_radeon.a")
+		endif()
+
+		# The upstream loader CMake reads these cache variables, and then checks for Mesa's
+		# matching Vulkan headers, RADV archive, and bundled zlib archive before exposing the
+		# ps4-vkloader target.
+		set(ORBIS_MESA_SRC "${VITA3K_PS4_MESA_SRC}" CACHE PATH "Matching Mesa source tree" FORCE)
+		set(ORBIS_MESA_BUILD "${VITA3K_PS4_MESA_BUILD}" CACHE PATH "Matching Mesa build tree" FORCE)
+		add_subdirectory("${VITA3K_PS4_ORBIS_KIT_DIR}/vkloader" "${CMAKE_BINARY_DIR}/external/ps4-vkloader")
+		target_include_directories(vulkan BEFORE INTERFACE "${VITA3K_PS4_MESA_SRC}/include")
+		target_link_libraries(vulkan INTERFACE ps4-vkloader)
+	elseif(VITA3K_PS4_VULKAN_LOADER_LIBRARIES)
+		if(NOT EXISTS "${VITA3K_PS4_VULKAN_HEADERS_DIR}/vulkan/vulkan_core.h")
+			message(FATAL_ERROR "Custom Vulkan loader requires VITA3K_PS4_VULKAN_HEADERS_DIR containing vulkan/vulkan_core.h from the same build")
+		endif()
+		target_include_directories(vulkan BEFORE INTERFACE "${VITA3K_PS4_VULKAN_HEADERS_DIR}")
+		target_link_libraries(vulkan INTERFACE ${VITA3K_PS4_VULKAN_LOADER_LIBRARIES})
+	else()
+		message(FATAL_ERROR
+			"VITA3K_PS4 cannot use Vulkan-Headers alone: provide VITA3K_PS4_ORBIS_KIT_DIR + "
+			"matching VITA3K_PS4_MESA_SRC/BUILD, or a compatible VITA3K_PS4_VULKAN_LOADER_LIBRARIES "
+			"and matching VITA3K_PS4_VULKAN_HEADERS_DIR. Orbis does not provide a normal dynamic libvulkan loader.")
+	endif()
+endif()
+
 add_library(vma INTERFACE)
 target_include_directories(vma INTERFACE
 	"${CMAKE_CURRENT_SOURCE_DIR}/VulkanMemoryAllocator-Hpp/include"
