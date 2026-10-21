@@ -21,16 +21,16 @@ bash scripts/build-smoke.sh
 
 The smoke test builds a tiny C application and packages it as `out/VitaPS4-SMOKE-v00.01.pkg`. It prints a startup message, waits five seconds, and exits. It is **not Vita3K** and does not emulate any games. The packaging script copies the OpenOrbis sample icon and runtime modules from your local SDK into the generated package; those files are not stored in this repository. Keep the generated package private and install it only on a test console with GoldHEN.
 
-The smoke build and package have **not** yet been run or tested on hardware by this repository. Passing the environment checker alone is not proof of a working PKG.
+The smoke build and PKG **were successfully created in GitHub Actions** using OpenOrbis v0.5.4. This validates the Linux cross-compile/link/package pipeline for the tiny C test only. The generated PKG was not retained as a downloadable artifact, and the app has **not** been launched on real PS4 hardware. Passing CI is not proof of console runtime compatibility.
 
 ## Porting roadmap
 
-1. Validate cross-compilation and PKG creation with the smoke test.
-2. Add a PS4-specific CMake target without breaking Vita3K's existing desktop/Android targets.
-3. Replace the desktop Qt front end with a PS4-friendly front end and controller handling.
-4. Port dependencies and runtime assumptions for the PS4 ABI.
-5. Bring up a compatible graphics backend. Vulkan is a major blocker because PS4 needs a working PS4 GPU driver path.
-6. Integrate Vita3K core, then package and test on real hardware.
+1. ✅ Validate cross-compilation and PKG creation with the smoke test in CI.
+2. Launch the generated smoke app on a test PS4 with GoldHEN; verify exit behavior and capture logs.
+3. Replace the five-second console smoke program with a minimal visible shell and controller input.
+4. Add a PS4-specific Vita3K CMake target without breaking desktop/Android targets.
+5. Port the minimum dependency set and runtime assumptions for the PS4 ABI.
+6. Bring up one compatible renderer path, then incrementally integrate Vita3K core and test on hardware.
 
 See the [source audit and blocker list](docs/PORTING_AUDIT.md) and the [reference-port analysis of PS4SX2 and M33](docs/REFERENCE_PORTS.md).
 
