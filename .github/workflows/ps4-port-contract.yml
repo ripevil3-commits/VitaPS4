@@ -7,12 +7,15 @@ on:
     paths:
       - "vita3k/sdl-frontend/src/frame_host_ps4.cpp"
       - "vita3k/CMakeLists.txt"
+      - "external/CMakeLists.txt"
+      - "cmake/ps4-wrapper.cmake"
       - "vita3k/sdl-frontend/CMakeLists.txt"
       - "vita3k/ps4/main_ps4.cpp"
       - "vita3k/sdl-frontend/src/session.cpp"
       - "scripts/build-ps4.sh"
       - "scripts/check-ps4-port.py"
       - "docs/PS4_BUILD.md"
+      - "docs/BETA_MILESTONES.md"
       - ".github/workflows/ps4-port-contract.yml"
   workflow_dispatch:
 
